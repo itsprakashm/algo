@@ -1,0 +1,23 @@
+# --- Python (Backend) ---
+/backend/__pycache__/
+/backend/**/*.pyc
+/backend/.env              # Don't upload backend env file
+/backend/*.log
+/backend/.pytest_cache/
+/backend/.mypy_cache/
+/backend/venv/
+/backend/env/
+/backend/.DS_Store
+
+# --- React (Frontend) ---
+/frontend/node_modules/
+/frontend/.env
+/frontend/build/
+/frontend/dist/
+/frontend/.DS_Store
+
+# --- Root level ---
+/*.zip                     # Ignore all zip files in root folder only
+*.log
+Thumbs.db
+.DS_Store
