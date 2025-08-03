@@ -25,6 +25,17 @@ class WebSocketClient:
         self.thread = None
         self.stop_thread = False
 
+        # Bidirectional symbol-token mapping
+        self.symbol_token_map = {
+            "NIFTY": {"token": "99926000", "exchange": "NSE", "name": "NIFTY"},
+            "BANKNIFTY": {"token": "99926009", "exchange": "NSE", "name": "BANKNIFTY"},
+            "SENSEX": {"token": "99919000", "exchange": "BSE", "name": "SENSEX"},
+            # Add more mappings as needed
+        }
+        self.token_symbol_map = {
+            info["token"]: sym for sym, info in self.symbol_token_map.items()
+        }
+
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
@@ -182,31 +193,37 @@ class WebSocketClient:
             return False
 
     def get_token_for_symbol(self, symbol: str) -> Dict[str, str]:
-        symbol_token_map = {
-            "NIFTY": {"token": "99926000", "exchange": "NSE", "name": "NIFTY"},
-            "BANKNIFTY": {"token": "99926009", "exchange": "NSE", "name": "BANKNIFTY"},
-            "SENSEX": {"token": "99919000", "exchange": "BSE", "name": "SENSEX"},
-            # Add more mappings as needed
-        }
-        return symbol_token_map.get(symbol, {"token": "1", "exchange": "NSE", "name": symbol})
+        return self.symbol_token_map.get(
+            symbol, {"token": "1", "exchange": "NSE", "name": symbol}
+        )
+
+    def get_symbol_for_token(self, token: str) -> str:
+        return self.token_symbol_map.get(token, token)
 
     def handle_ltp_data(self, data: Dict[str, Any]):
         try:
             if "data" in data:
                 for item in data["data"]:
-                    symbol = item.get("symbol")
+                    symbol = item.get("symbol") or self.get_symbol_for_token(
+                        item.get("token")
+                    )
                     ltp = item.get("ltp")
                     change = item.get("change")
                     change_percent = item.get("changePercent")
                     if symbol and ltp:
                         if "ltp_callback" in self.callbacks:
-                            self.callbacks["ltp_callback"](symbol, {
-                                "ltp": ltp,
-                                "change": change,
-                                "change_percent": change_percent,
-                                "timestamp": datetime.now().isoformat()
-                            })
-                        self.logger.debug(f"LTP Update - {symbol}: ₹{ltp} ({change_percent:+.2f}%)")
+                            self.callbacks["ltp_callback"](
+                                symbol,
+                                {
+                                    "ltp": ltp,
+                                    "change": change,
+                                    "change_percent": change_percent,
+                                    "timestamp": datetime.now().isoformat(),
+                                },
+                            )
+                        self.logger.info(
+                            f"LTP Update - {symbol}: ₹{ltp} ({change_percent:+.2f}%)"
+                        )
         except Exception as e:
             self.logger.error(f"LTP data handling error: {str(e)}")
 
